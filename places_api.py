@@ -40,20 +40,20 @@ def id_in_list(id, places):
     return False
 
 
-def get_pickleball_clubs_in_area(area):
+def get_pickleball_clubs_in_area(area, state=""):
     print(f"Searching area {area}")
 
     merged = []
     query1 = {
-        "textQuery": f"indoor pickleball in {area}",
+        "textQuery": f"indoor pickleball in {area}, {state}",
     }
 
     query2 = {
-        "textQuery": f"pickleball clubs in {area}",
+        "textQuery": f"pickleball clubs in {area}, {state}",
     }
 
     query3 = {
-        "textQuery": f"pickleball in {area}",
+        "textQuery": f"pickleball in {area}, {state}",
     }
 
     resp1 = requests.post(TEXT_SEARCH_URL, json=query1, headers=TEXT_SEARCH_HEADERS)
@@ -69,6 +69,17 @@ def get_pickleball_clubs_in_area(area):
     merged_places = dedup_by_ids(merged)
 
     return merged_places
+
+
+def get_clubs_in_list_of_areas(areas, state):
+    merged = []
+
+    for area in areas:
+        area_res = get_pickleball_clubs_in_area(area, state=state)
+        merged.extend(area_res)
+
+    merged = dedup_by_ids(merged)
+    return merged
 
 
 def enrich_individual_result(id_json):
@@ -120,9 +131,9 @@ def enrich_location_list(loc_ids):
 
 def write_locs_as_csv(loc_lists, timestamp):
     with open(f"enriched_{timestamp}.csv", "w") as csv:
-        csv.write("name; address; facility type; phone number; website\n")
+        csv.write("name; address; phone number; website\n")
 
         for item in loc_lists:
             csv.write(
-                f"{item['name']},{item['address']},{item['phone']},{item['website']}\n"
+                f"{item['name']};{item['address']};{item['phone']};{item['website']}\n"
             )

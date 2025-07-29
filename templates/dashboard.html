@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pickleball Business Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <style>
+      /* Set a fixed width for the button */
+      #search_btn {
+        width: 120px;
+        /* Adjust this value as needed */
+      }
+
+      /* Center the spinner vertically */
+      .spinner {
+        display: inline-block;
+        vertical-align: middle;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="mx-8 mt-8">
+      <h1 class="text-4xl">PickleScraper Dashboard</h1>
+      <div class="m-4 flex w-full">
+        <input
+          class="flex-auto outline outline-black rounded-sm m-2 p-4 bg-stone-100 text-xl"
+          type="text"
+          name="search_term"
+          autofocus
+          id="search_term"
+        />
+        <button
+          class="flex-none rounded-md bg-green-500 hover:bg-green-400 m-2 p-2 outline outline-black text-white"
+          id="search_btn"
+          type="button"
+        >
+          <span id="button_text">Search</span>
+        </button>
+      </div>
+    </div>
+    <div class="p-4 w-full">
+      <table
+        class="min-w-full divide-y divide-gray-200 border rounded-lg shadow-sm"
+      >
+        <caption class="caption-top text-blue-600">
+          <a id="csv_export" href="">Export as CSV</a>
+        </caption>
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">
+              Club Name
+            </th>
+            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">
+              Address
+            </th>
+            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">
+              Phone
+            </th>
+            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">
+              Website
+            </th>
+            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">
+              Email
+            </th>
+          </tr>
+        </thead>
+        <tbody
+          id="clubs"
+          class="divide-y divide-gray-100 bg-white text-sm text-gray-800"
+        >
+          <!-- Club data will be populated here by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+    <script>
+      let timestamp = Date.now();
+      const btn = document.getElementById("search_btn");
+      const buttonText = document.getElementById("button_text");
+      const csvUrl = document.getElementById("csv_export");
+
+      buttonText.addEventListener("change", async () => {
+        if (buttonText.value == "") {
+          buttonText.disabled = true;
+        } else {
+          buttonText.disabled = false;
+        }
+      });
+
+      csvUrl.addEventListener("click", async () => {
+        window.open(`/results?timestamp=${timestamp}`);
+      });
+
+      btn.addEventListener("click", async () => {
+        const search_term = document.getElementById("search_term").value;
+        const post_body = { term: search_term, timestamp: timestamp };
+
+        // Change button text to loading spinner
+        buttonText.innerHTML = '<i class="fas fa-spinner fa-spin spinner"></i>'; // Set spinner icon
+        btn.disabled = true; // Disable the button to prevent multiple clicks
+
+        try {
+          token = Date.now();
+          const response = await fetch("/search", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(post_body),
+          });
+
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+
+          const data = await response.json();
+          const clubsContainer = document.getElementById("clubs");
+          clubsContainer.innerHTML = ""; // Clear existing clubs
+
+          // Populate the table with new club data
+          data.forEach((club) => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                      <td class="px-4 py-2 font-medium">${club.name}</td>
+                      <td class="px-4 py-2">${club.address}</td>
+                      <td class="px-4 py-2">${club.phone}</td>
+                      <td class="px-4 py-2 text-blue-600"><a href="${club.website}" target="_blank">${club.website}</a></td>
+                      <td class="px-4 py-2">${club.email}</td>
+                  `;
+            clubsContainer.appendChild(row);
+          });
+        } catch (error) {
+          console.error("Error:", error);
+        } finally {
+          // Reset button to original state
+          buttonText.innerHTML = "Search"; // Reset button text
+          btn.disabled = false; // Re-enable the button
+        }
+      });
+    </script>
+  </body>
+</html>

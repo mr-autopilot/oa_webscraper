@@ -7,6 +7,8 @@ from oa_webscraper.places_api import (
 )
 from oa_webscraper import counties
 
+from oa_webscraper.places_api import OUTPUT_DIR
+
 state_counties = {
     "alabama": counties.ALABAMA_COUNTIES,
     "alaska": counties.ALASKA_COUNTIES,
@@ -91,4 +93,4 @@ def search():
 
 @app.route("/results", methods=["GET"])
 def results():
-    return send_file(f"enriched_{request.args.get('timestamp')}.csv")
+    return send_file(f"{OUTPUT_DIR}/enriched_{request.args.get('timestamp')}.csv")

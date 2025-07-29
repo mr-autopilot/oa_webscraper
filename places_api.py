@@ -2,9 +2,13 @@ import requests
 from dotenv import load_dotenv
 import os
 
+from .enrichment import naive_email_search
+
 load_dotenv(".env")
 
 API_KEY = os.getenv("API_KEY")
+SERP_KEY = os.getenv("SERP_KEY")
+OUTPUT_DIR = os.getenv("OUTPUT_DIR")
 
 TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
 
@@ -21,6 +25,50 @@ DETAILS_HEADER = {
 }
 
 DETAILS_URL = "https://places.googleapis.com/v1/places/"
+
+WEB_BLACKLIST = [
+    "facilities",
+    "facility",
+    "parks",
+    ".gov",
+    ".org",
+    "county",
+    "clerk",
+    "court",
+    "circuit",
+    "district",
+    ".edu",
+    "center",
+    "centre",
+    "community",
+    "school",
+    "rec",
+    "cityof",
+    "campground",
+    # apparently subways get grabbed pretty regularly
+    "subway",
+    "store",
+    "townof",
+    "fairgrounds",
+    "sportsmen",
+]
+
+NAME_BLACKLIST = [
+    "clerk",
+    "court",
+    "circuit",
+    "district",
+    "center",
+    "centre",
+    "community",
+    "school",
+    "campground",
+    # apparently subways get grabbed pretty regularly
+    "subway",
+    "store",
+    "fairgrounds",
+    "sportsmen",
+]
 
 
 def dedup_by_ids(places):
@@ -91,6 +139,8 @@ def enrich_individual_result(id_json):
 
     details = resp.json()
 
+    print(details)
+
     name = details.get("displayName", "Not Available")
     if not name == "Not Available":
         name = name["text"]
@@ -99,13 +149,17 @@ def enrich_individual_result(id_json):
 
     website = details.get("websiteUri", "Not Available")
 
+    email = naive_email_search(website)
+
     number = details.get("nationalPhoneNumber", "Not Available")
 
+    print(f"Lead found: {name}")
     return {
         "name": name,
         "address": addy,
         "phone": number,
         "website": website,
+        "email": email,
     }
 
 
@@ -113,27 +167,34 @@ def enrich_location_list(loc_ids):
     output = []
     for id in loc_ids:
         result = enrich_individual_result(id)
-        contains_facilities = (
-            "facilities" in result["website"].lower()
-            or "facility" in result["website"].lower()
-            or "parks" in result["website"].lower()
-            or ".gov" in result["website"].lower()
-        )
+
+        contains_blacklisted = in_blacklist(
+            WEB_BLACKLIST, result["website"]
+        ) or in_blacklist(NAME_BLACKLIST, result["website"])
+
         if (
             result["website"] != "Not Available"
             and result["phone"] != "Not Available"
-            and not contains_facilities
+            and not contains_blacklisted
         ):
             output.append(result)
 
     return output
 
 
+def in_blacklist(blacklist, string: str):
+    for word in blacklist:
+        if word.lower() in string.lower():
+            return True
+
+    return False
+
+
 def write_locs_as_csv(loc_lists, timestamp):
-    with open(f"enriched_{timestamp}.csv", "w") as csv:
-        csv.write("name; address; phone number; website\n")
+    with open(f"{OUTPUT_DIR}/enriched_{timestamp}.csv", "w") as csv:
+        csv.write("name; address; phone number; website; email\n")
 
         for item in loc_lists:
             csv.write(
-                f"{item['name']};{item['address']};{item['phone']};{item['website']}\n"
+                f"{item['name']};{item['address']};{item['phone']};{item['website']};{item['email']}\n"
             )

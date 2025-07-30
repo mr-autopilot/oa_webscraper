@@ -242,7 +242,7 @@ Where:
 | Scope        | Estimated Cost |
 | ------------ | -------------- |
 | Small states | \$1–\$3        |
-| Large states | \$10–\$50      |
+| Large states | \$20–\$30      |
 | Nationwide   | \$500–600      |
 
 Costs can fluctuate based on regional business density, false positives, and how many results pass your filters.

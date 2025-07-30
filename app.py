@@ -9,6 +9,8 @@ from oa_webscraper import counties
 
 from oa_webscraper.places_api import OUTPUT_DIR
 
+# Mapping of lowercase state names to lists of county names
+# Used to expand a state-level search into individual county-level queries
 state_counties = {
     "alabama": counties.ALABAMA_COUNTIES,
     "alaska": counties.ALASKA_COUNTIES,
@@ -62,11 +64,13 @@ state_counties = {
     "wyoming": counties.WYOMING_COUNTIES,
 }
 
+# Initialize Flask app
 app = Flask(__name__)
 
 
 @app.route("/", methods=["GET"])
 def dashboard():
+    # Renders the HTML UI that users interact with
     clubs = []
 
     return render_template("dashboard.html", clubs=clubs)
@@ -74,23 +78,29 @@ def dashboard():
 
 @app.route("/search", methods=["POST"])
 def search():
+    # Handle POST requests from the frontend search form
     req_data = request.get_json()
     search_term = req_data["term"]
     enriched = []
     if search_term.lower() in state_counties.keys():
+        # If a state name is detected, break into counties and search each one
         counties = state_counties.get(search_term.lower())
         location_ids = get_clubs_in_list_of_areas(counties, search_term)
         enriched = enrich_location_list(location_ids, state=search_term)
     else:
+        # Otherwise, treat the input as a single city search
         location_ids = get_pickleball_clubs_in_area(search_term)
         enriched = enrich_location_list(location_ids)
 
+    # Save results to disk as a CSV file
     write_locs_as_csv(enriched, req_data["timestamp"])
 
+    # Send enriched list back to frontend as JSON
     results = jsonify(enriched)
     return results
 
 
 @app.route("/results", methods=["GET"])
 def results():
+    # Allow client to download the CSV by timestamp-based filename
     return send_file(f"{OUTPUT_DIR}/enriched_{request.args.get('timestamp')}.csv")

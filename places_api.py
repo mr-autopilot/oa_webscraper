@@ -4,6 +4,7 @@ import os
 
 from .enrichment import naive_email_search
 
+# Load .env file (contains API keys and output path)
 load_dotenv(".env")
 
 # Environment variables
@@ -11,23 +12,27 @@ API_KEY = os.getenv("API_KEY")
 SERP_KEY = os.getenv("SERP_KEY")
 OUTPUT_DIR = os.getenv("OUTPUT_DIR")
 
+# Endpoint for Places Text Search (used to retrieve Place IDs)
 TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
 
-# API Headers, as required by Google Places API
+# Headers required for initial text search request
 TEXT_SEARCH_HEADERS = {
     "Content-Type": "application/json",
     "X-Goog-Api-Key": API_KEY,
     "X-Goog-FieldMask": "places.id",
 }
 
+# Headers required for place details enrichment request
 DETAILS_HEADER = {
     "Content-Type": "application/json",
     "X-Goog-Api-Key": API_KEY,
     "X-Goog-FieldMask": "displayName,shortFormattedAddress,nationalPhoneNumber,websiteUri,addressComponents",
 }
 
+# Base URL for individual Place Details queries
 DETAILS_URL = "https://places.googleapis.com/v1/places/"
 
+# Substrings that signal a website is likely irrelevant or civic (for filtering)
 WEB_BLACKLIST = [
     "facilities",
     "facility",
@@ -55,6 +60,7 @@ WEB_BLACKLIST = [
     "sportsmen",
 ]
 
+# Substrings that signal a name is likely irrelevant
 NAME_BLACKLIST = [
     "clerk",
     "court",
@@ -72,6 +78,7 @@ NAME_BLACKLIST = [
     "sportsmen",
     "gun",
     "golf",
+    "fair",
     "archery",
     "senior",
     # paradoxically, to avoid any public courts
@@ -80,6 +87,7 @@ NAME_BLACKLIST = [
 
 
 def dedup_by_ids(places):
+    # Deduplicates places by their ID (used after merging multiple search results)
     out = []
     for place in places:
         if not id_in_list(place["id"], out):
@@ -89,6 +97,7 @@ def dedup_by_ids(places):
 
 
 def id_in_list(id, places):
+    # Checks if a given ID is already in a list of places
     for i in places:
         if id == i["id"]:
             return True
@@ -99,6 +108,7 @@ def id_in_list(id, places):
 def get_pickleball_clubs_in_area(area, state=""):
     print(f"Searching area {area}")
 
+    # Sends 3 variations of text search queries to increase search coverage
     merged = []
     query1 = {
         "textQuery": f"indoor pickleball in {area}, {state}",
@@ -112,22 +122,26 @@ def get_pickleball_clubs_in_area(area, state=""):
         "textQuery": f"pickleball in {area}, {state}",
     }
 
+    # All of these are free (id-only) queries — results return Place IDs
     resp1 = requests.post(TEXT_SEARCH_URL, json=query1, headers=TEXT_SEARCH_HEADERS)
 
     resp2 = requests.post(TEXT_SEARCH_URL, json=query2, headers=TEXT_SEARCH_HEADERS)
 
     resp3 = requests.post(TEXT_SEARCH_URL, json=query3, headers=TEXT_SEARCH_HEADERS)
 
+    # Merge all results
     merged.extend(resp1.json().get("places", {}))
     merged.extend(resp2.json().get("places", {}))
     merged.extend(resp3.json().get("places", {}))
 
+    # Remove duplicates
     merged_places = dedup_by_ids(merged)
 
     return merged_places
 
 
 def get_clubs_in_list_of_areas(areas, state):
+    # Wrapper to run get_pickleball_clubs_in_area across a list of counties
     merged = []
 
     for area in areas:
@@ -139,6 +153,7 @@ def get_clubs_in_list_of_areas(areas, state):
 
 
 def enrich_individual_result(id_json):
+    # Fetch full Place Details (this is the $0.02 enrichment call)
     id = id_json["id"]
     resp = requests.get(
         f"{DETAILS_URL}{id}",
@@ -147,8 +162,7 @@ def enrich_individual_result(id_json):
 
     details = resp.json()
 
-    # print(details)
-
+    # Extract individual fields (some may be missing)
     name = details.get("displayName", "Not Available")
     if not name == "Not Available":
         name = name["text"]
@@ -172,29 +186,32 @@ def enrich_individual_result(id_json):
 
 
 def enrich_location_list(loc_ids, state: None | str = None):
+    # Loops through all Place IDs and enriches + filters them
     output = []
     for id in loc_ids:
         result = enrich_individual_result(id)
 
+        # Check for filtered words in website or name
         contains_blacklisted = in_blacklist(
             WEB_BLACKLIST, result["website"]
         ) or in_blacklist(NAME_BLACKLIST, result["website"])
 
         location_ok = True
 
-        print(result["address_components"])
         if state:
+            # If doing a full-state scrape, verify business is actually located in the target state (Google will sometimes fudge bordering counties)
             location_ok = state_in_address_components(
                 state, result["address_components"]
             )
-        print(location_ok)
 
+        # Apply core filtering: skip if missing key data or blacklisted
         if (
             result["website"] != "Not Available"
             and result["phone"] != "Not Available"
             and not contains_blacklisted
             and location_ok
         ):
+            # Scrape email from website (if any)
             result["email"] = naive_email_search(result["website"])
             output.append(result)
 
@@ -202,6 +219,7 @@ def enrich_location_list(loc_ids, state: None | str = None):
 
 
 def in_blacklist(blacklist, string: str):
+    # Returns True if any blacklist term appears in string
     for word in blacklist:
         if word.lower() in string.lower():
             return True
@@ -210,6 +228,7 @@ def in_blacklist(blacklist, string: str):
 
 
 def state_in_address_components(state, address_comps):
+    # Checks if the state's name appears in the addressComponents block
     for i in address_comps:
         if i["longText"].lower() == state.lower():
             return True
@@ -218,6 +237,7 @@ def state_in_address_components(state, address_comps):
 
 
 def write_locs_as_csv(loc_lists, timestamp):
+    # Save results to CSV with semi-colon delimiters
     with open(f"{OUTPUT_DIR}/enriched_{timestamp}.csv", "w") as csv:
         csv.write("name; address; phone number; website; email\n")
 

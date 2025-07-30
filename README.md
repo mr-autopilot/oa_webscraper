@@ -85,7 +85,7 @@ Navigate to: [http://localhost:5000](http://localhost:5000)
 
 ## Deployment on PythonAnywhere
 
-PickleScraper is deployed at [https://yourusername.pythonanywhere.com](https://yourusername.pythonanywhere.com)
+PickleScraper is deployed [here](https://operationautopilot.pythonanywhere.com/)
 
 ### To deploy or update:
 
@@ -164,8 +164,6 @@ PickleScraper is deployed at [https://yourusername.pythonanywhere.com](https://y
 * Blacklist filters remove civic or non-commercial venues
 * Google API quotas apply based on your usage and key limits
 
-* Absolutely — here’s the raw content you can add to the README, covering both **operational security (opsec)** and **cost/pricing realities**, with clear and direct language tailored for internal users or operators.
-
 ---
 
 ## Operational Security (OpSec)
@@ -177,12 +175,6 @@ PickleScraper is designed to be used internally or by trusted operators. While i
 * **Avoid scraping sensitive domains.** The enrichment scraper uses `Trafilatura` to crawl business websites. While it is respectful and lightweight, it is still a crawler. Don’t point it at sites with login portals, sensitive data, or any business where scraping could create legal exposure.
 * **Be mindful of data handling.** The CSVs may include scraped emails and phone numbers. Treat that data as PII and handle accordingly — especially if importing into outbound systems.
 * **Rotate API keys often**: Especially if handled by many people, the risk of leakage increases. 
----
-
-## Pricing & API Usage
-
-Absolutely — here’s the final, polished **Pricing** section with a suggested sample average (`N = 20`) included in the formula explanation to help non-technical users make quick estimates:
-
 ---
 
 ## Pricing

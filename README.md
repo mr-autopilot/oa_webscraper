@@ -150,6 +150,7 @@ PickleScraper is deployed [here](https://operationautopilot.pythonanywhere.com/)
 | `places_api.py`    | Querying + enrichment logic  |
 | `enrichment.py`    | Email scraping from websites |
 | `counties.py`      | U.S. county reference data   |
+| `templates/dashboard.html`    | Actual frontend user interface |
 | `requirements.txt` | All Python dependencies      |
 
 ---

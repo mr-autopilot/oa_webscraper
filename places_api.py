@@ -239,9 +239,9 @@ def state_in_address_components(state, address_comps):
 def write_locs_as_csv(loc_lists, timestamp):
     # Save results to CSV with semi-colon delimiters
     with open(f"{OUTPUT_DIR}/enriched_{timestamp}.csv", "w") as csv:
-        csv.write("name; address; phone number; website; email\n")
+        csv.write("name; phone number; website; business email; street address\n")
 
         for item in loc_lists:
             csv.write(
-                f"{item['name']};{item['address']};{item['phone']};{item['website']};{item['email']}\n"
+                f"{item['name']};{item['phone']};{item['website']};{item['email']};{item['address']}\n"
             )

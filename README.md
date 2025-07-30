@@ -163,3 +163,105 @@ PickleScraper is deployed at [https://yourusername.pythonanywhere.com](https://y
 * Email scraping is heuristic — not all entries yield results
 * Blacklist filters remove civic or non-commercial venues
 * Google API quotas apply based on your usage and key limits
+
+* Absolutely — here’s the raw content you can add to the README, covering both **operational security (opsec)** and **cost/pricing realities**, with clear and direct language tailored for internal users or operators.
+
+---
+
+## Operational Security (OpSec)
+
+PickleScraper is designed to be used internally or by trusted operators. While it does not store or transmit data beyond Google API calls and optional website fetches for enrichment, you should still follow good opsec practices:
+
+* **Keep your `.env` file private.** Do not commit it to source control. It contains your API keys and should never be shared.
+* **Limit access to the server.** If deployed (e.g. on PythonAnywhere), only give access to people you trust with your API quota and output data.
+* **Avoid scraping sensitive domains.** The enrichment scraper uses `Trafilatura` to crawl business websites. While it is respectful and lightweight, it is still a crawler. Don’t point it at sites with login portals, sensitive data, or any business where scraping could create legal exposure.
+* **Be mindful of data handling.** The CSVs may include scraped emails and phone numbers. Treat that data as PII and handle accordingly — especially if importing into outbound systems.
+* **Rotate API keys often**: Especially if handled by many people, the risk of leakage increases. 
+---
+
+## Pricing & API Usage
+
+Absolutely — here’s the final, polished **Pricing** section with a suggested sample average (`N = 20`) included in the formula explanation to help non-technical users make quick estimates:
+
+---
+
+## Pricing
+
+PickleScraper uses two endpoints from the Google Places API:
+
+* **Text Search (Essentials)** – `$0.00` per request
+  (Free when only requesting `places.id` via `X-Goog-FieldMask`)
+
+* **Place Details (Enterprise)** – `$0.02` per request
+  (Used to fetch business details like name, phone, website, and address)
+
+### How Billing Works
+
+Each search returns only a list of Place IDs — not usable data.
+
+To determine whether a business is relevant, PickleScraper needs fields like:
+
+* Business name
+* Website URL
+* Phone number
+* Address
+
+Rather than making multiple paid calls to fetch these fields individually, PickleScraper makes a **single Place Details (Enterprise)** request per result to retrieve everything needed for filtering. This approach:
+
+* Minimizes total requests
+* Keeps enrichment logic simple
+* Ensures all filtering happens with full context
+
+> You are charged `$0.02` for **every Place ID returned**, even if the business is later discarded during filtering. Text search is free; enrichment is not.
+
+---
+
+### Cost Per Lead
+
+* Typical cost per usable lead: **\$0.08–\$0.15**
+* You pay for all enrichments — not just the ones that survive filtering
+* Low-yield areas (e.g. rural or civic-heavy regions) will increase cost per usable lead
+
+---
+
+### Typical Spend
+
+* Small states: **\$1–\$3**
+* Large states: **\$10–\$50**
+* Nationwide: **\$500–600**
+
+Actual cost varies based on:
+
+* The number of counties in the state
+* How many Place IDs are returned across all search queries
+* How strict your filters are (which don’t affect cost, only output)
+
+---
+
+### Estimate Formula for Any State
+
+To estimate the cost of scraping a specific state:
+
+```
+Total Cost = Y × N × 0.02
+```
+
+Where:
+
+* `Y` = number of counties in the state
+* `N` = average number of Place results returned per county
+* `$0.02` = cost per Place Details (Enterprise) request
+
+**Sample Average:**
+If you don’t have data yet, use `N = 20` as a conservative default — this assumes that across three search queries per county, you’ll get around 20 unique places that trigger enrichment.
+
+**Example:**
+
+```
+State with 60 counties
+Estimated cost = 60 × 20 × 0.02 = $24.00
+```
+
+This provides a quick way to budget based on state size.
+
+---

@@ -8,13 +8,10 @@
 
 - Search by **city** or **state**
 - Enrich each lead with phone, website, and email
-- Avoids false positives using smart filters
-- Output is a **CRM-ready CSV**
-- Works via browser, no coding required
 
 ---
 
-## Installation Guide (Local)
+## Installation Guide (For Local Development)
 
 ### 1. Install Python
 
@@ -93,18 +90,18 @@ PickleScraper is deployed [here](https://operationautopilot.pythonanywhere.com/)
 2. **Install requirements** using the PythonAnywhere **Console**:
 
    ```bash
-   pip install -r /home/yourusername/picklescraper/requirements.txt
+   pip install -r /home/operationautopilot/oa_webscraper/requirements.txt
    ```
 3. **Create the `.env` file** in the same directory with your credentials:
 
    ```ini
    API_KEY=your_google_places_api_key
    SERP_KEY=your_serpapi_key
-   OUTPUT_DIR=/home/yourusername/picklescraper/outputs
+   OUTPUT_DIR=/home/operationautopilot/oa_webscraper/output
    ```
 
    * `OUTPUT_DIR` must be an **absolute path on the PythonAnywhere file system**
-   * Make sure the `/outputs` directory exists
+   * Make sure the `output` directory exists. You can create it from the menu if need be.
 4. Use the **Web tab** to reload your Flask app.
 
 ---
@@ -234,7 +231,7 @@ Where:
 
 > A 60-county state with \~20 results per county would cost:
 > `60 × 20 × 0.02 = $24.00`
-
+> California roughly matches this description.
 ---
 
 ### Spend Guidelines
@@ -242,7 +239,7 @@ Where:
 | Scope        | Estimated Cost |
 | ------------ | -------------- |
 | Small states | \$1–\$3        |
-| Large states | \$20–\$30      |
+| Large states | \$20–\$40      |
 | Nationwide   | \$500–600      |
 
 Costs can fluctuate based on regional business density, false positives, and how many results pass your filters.

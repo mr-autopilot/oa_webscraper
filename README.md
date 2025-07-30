@@ -187,60 +187,46 @@ Absolutely — here’s the final, polished **Pricing** section with a suggested
 
 ## Pricing
 
-PickleScraper uses two endpoints from the Google Places API:
+PickleScraper uses two Google Places API endpoints:
 
 * **Text Search (Essentials)** – `$0.00` per request
-  (Free when only requesting `places.id` via `X-Goog-FieldMask`)
+  Free when querying for only Place IDs (`X-Goog-FieldMask: places.id`)
 
 * **Place Details (Enterprise)** – `$0.02` per request
-  (Used to fetch business details like name, phone, website, and address)
+  Used to fetch business name, website, phone number, and address
 
-### How Billing Works
+---
 
-Each search returns only a list of Place IDs — not usable data.
+### Why Every Result is Enriched
 
-To determine whether a business is relevant, PickleScraper needs fields like:
+Search results from Google Places API contain only the **Place ID** — no name, no phone, no website, no address.
 
-* Business name
-* Website URL
-* Phone number
-* Address
+To evaluate whether a business is valid, PickleScraper needs at least:
 
-Rather than making multiple paid calls to fetch these fields individually, PickleScraper makes a **single Place Details (Enterprise)** request per result to retrieve everything needed for filtering. This approach:
+* Name (to screen out government/gym/etc)
+* Website (to match against domain blacklists)
 
-* Minimizes total requests
-* Keeps enrichment logic simple
-* Ensures all filtering happens with full context
+While it’s technically possible to request individual fields and follow up with another request if a result passes, Google’s billing model charges **per call**, not per field. So making two separate requests (e.g. one to get name, then another for full info) would cost **more** than just fetching everything in one go.
 
-> You are charged `$0.02` for **every Place ID returned**, even if the business is later discarded during filtering. Text search is free; enrichment is not.
+> Result: Every Place ID is enriched with all necessary fields upfront — even if it’s discarded later during filtering.
 
 ---
 
 ### Cost Per Lead
 
-* Typical cost per usable lead: **\$0.08–\$0.15**
-* You pay for all enrichments — not just the ones that survive filtering
-* Low-yield areas (e.g. rural or civic-heavy regions) will increase cost per usable lead
+* Each result enriched costs **\$0.02**, no exceptions
+* Final cost per usable lead varies with location and density:
+
+  * **Typical range**: \~\$0.08–\$0.15
+  * Higher in regions with low signal or civic-heavy listings
+
+You are billed for everything enriched — not just the results that make it into the CSV.
 
 ---
 
-### Typical Spend
+### Estimate Formula for State-Level Queries
 
-* Small states: **\$1–\$3**
-* Large states: **\$10–\$50**
-* Nationwide: **\$500–600**
-
-Actual cost varies based on:
-
-* The number of counties in the state
-* How many Place IDs are returned across all search queries
-* How strict your filters are (which don’t affect cost, only output)
-
----
-
-### Estimate Formula for Any State
-
-To estimate the cost of scraping a specific state:
+Use the following to estimate cost:
 
 ```
 Total Cost = Y × N × 0.02
@@ -249,19 +235,33 @@ Total Cost = Y × N × 0.02
 Where:
 
 * `Y` = number of counties in the state
-* `N` = average number of Place results returned per county
-* `$0.02` = cost per Place Details (Enterprise) request
-
-**Sample Average:**
-If you don’t have data yet, use `N = 20` as a conservative default — this assumes that across three search queries per county, you’ll get around 20 unique places that trigger enrichment.
+* `N` = average number of results per county (a safe default is `20`)
+* `$0.02` = cost per enrichment call
 
 **Example:**
 
-```
-State with 60 counties
-Estimated cost = 60 × 20 × 0.02 = $24.00
-```
-
-This provides a quick way to budget based on state size.
+> A 60-county state with \~20 results per county would cost:
+> `60 × 20 × 0.02 = $24.00`
 
 ---
+
+### Spend Guidelines
+
+| Scope        | Estimated Cost |
+| ------------ | -------------- |
+| Small states | \$1–\$3        |
+| Large states | \$10–\$50      |
+| Nationwide   | \$500–600      |
+
+Costs can fluctuate based on regional business density, false positives, and how many results pass your filters.
+
+---
+
+### Recommendations
+
+* **Monitor usage in Google Cloud Console**
+* **Set billing alerts or soft limits** before large scans
+* **Sample a few counties or cities** before full-state runs
+
+PickleScraper is efficient when used with targeting and awareness — not when left running blind.
+

@@ -6,12 +6,14 @@ from .enrichment import naive_email_search
 
 load_dotenv(".env")
 
+# Environment variables
 API_KEY = os.getenv("API_KEY")
 SERP_KEY = os.getenv("SERP_KEY")
 OUTPUT_DIR = os.getenv("OUTPUT_DIR")
 
 TEXT_SEARCH_URL = "https://places.googleapis.com/v1/places:searchText"
 
+# API Headers, as required by Google Places API
 TEXT_SEARCH_HEADERS = {
     "Content-Type": "application/json",
     "X-Goog-Api-Key": API_KEY,
@@ -68,6 +70,12 @@ NAME_BLACKLIST = [
     "store",
     "fairgrounds",
     "sportsmen",
+    "gun",
+    "golf",
+    "archery",
+    "senior",
+    # paradoxically, to avoid any public courts
+    "pickleball courts",
 ]
 
 
@@ -139,17 +147,16 @@ def enrich_individual_result(id_json):
 
     details = resp.json()
 
-    print(details)
+    # print(details)
 
     name = details.get("displayName", "Not Available")
     if not name == "Not Available":
         name = name["text"]
 
     addy = details.get("shortFormattedAddress", "Not Available")
+    addy_comps = details.get("addressComponents")
 
     website = details.get("websiteUri", "Not Available")
-
-    email = naive_email_search(website)
 
     number = details.get("nationalPhoneNumber", "Not Available")
 
@@ -157,13 +164,14 @@ def enrich_individual_result(id_json):
     return {
         "name": name,
         "address": addy,
+        "address_components": addy_comps,
         "phone": number,
         "website": website,
-        "email": email,
+        "email": "",
     }
 
 
-def enrich_location_list(loc_ids):
+def enrich_location_list(loc_ids, state: None | str = None):
     output = []
     for id in loc_ids:
         result = enrich_individual_result(id)
@@ -172,11 +180,22 @@ def enrich_location_list(loc_ids):
             WEB_BLACKLIST, result["website"]
         ) or in_blacklist(NAME_BLACKLIST, result["website"])
 
+        location_ok = True
+
+        print(result["address_components"])
+        if state:
+            location_ok = state_in_address_components(
+                state, result["address_components"]
+            )
+        print(location_ok)
+
         if (
             result["website"] != "Not Available"
             and result["phone"] != "Not Available"
             and not contains_blacklisted
+            and location_ok
         ):
+            result["email"] = naive_email_search(result["website"])
             output.append(result)
 
     return output
@@ -185,6 +204,14 @@ def enrich_location_list(loc_ids):
 def in_blacklist(blacklist, string: str):
     for word in blacklist:
         if word.lower() in string.lower():
+            return True
+
+    return False
+
+
+def state_in_address_components(state, address_comps):
+    for i in address_comps:
+        if i["longText"].lower() == state.lower():
             return True
 
     return False

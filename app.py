@@ -80,7 +80,7 @@ def search():
     if search_term.lower() in state_counties.keys():
         counties = state_counties.get(search_term.lower())
         location_ids = get_clubs_in_list_of_areas(counties, search_term)
-        enriched = enrich_location_list(location_ids)
+        enriched = enrich_location_list(location_ids, state=search_term)
     else:
         location_ids = get_pickleball_clubs_in_area(search_term)
         enriched = enrich_location_list(location_ids)

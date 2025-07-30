@@ -1,6 +1,7 @@
 import re
 import trafilatura
 import serpapi
+from .places_api import SERP_KEY
 
 
 def contains_any_of(string, arr):
@@ -22,12 +23,13 @@ good_positions = [
     "founder",
     "owner",
     "chief",
+    "partner",
 ]
 
 params = {
     "engine": "google_light",
     "q": f"{club} owner",
-    "api_key": "9e82271ac2c170fed452de0dfd81741a7c060d0821dd0adb48c821c3d81b5f67",
+    "api_key": SERP_KEY,
 }
 
 club_contact = "Not Found"

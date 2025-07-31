@@ -9,6 +9,10 @@
 - Search by **city** or **state**
 - Enrich each lead with phone, website, and email
 
+## Usage
+
+See the manual here:
+[https://docs.google.com/document/d/1J6RJoAIA5ooU5yxlg-MWh1yqYb6j3YML7QST53-C2IY/edit?usp=sharing](https://docs.google.com/document/d/1J6RJoAIA5ooU5yxlg-MWh1yqYb6j3YML7QST53-C2IY/edit?usp=sharing)
 ---
 
 ## Installation Guide (For Local Development)

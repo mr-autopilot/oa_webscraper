@@ -99,9 +99,9 @@ PickleScraper is deployed [here](https://operationautopilot.pythonanywhere.com/)
 3. **Create the `.env` file** in the same directory with your credentials:
 
    ```ini
-   API_KEY=your_google_places_api_key
-   SERP_KEY=your_serpapi_key
-   OUTPUT_DIR=/home/operationautopilot/oa_webscraper/output
+   export API_KEY=your_google_places_api_key
+   export SERP_KEY=your_serpapi_key
+   export OUTPUT_DIR=/home/operationautopilot/oa_webscraper/output
    ```
 
    * `OUTPUT_DIR` must be an **absolute path on the PythonAnywhere file system**
